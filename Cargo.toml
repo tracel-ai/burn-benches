@@ -1,0 +1,31 @@
+[package]
+name = "burn-benches"
+version = "0.1.0"
+authors = ["nathanielsimard <nathaniel.simard.42@gmail.com>"]
+description = "Benchmarks for burn"
+edition = "2021"
+
+[features]
+default = ["ndarray"]
+tch-cpu = ["burn-tch"]
+tch-gpu = ["burn-tch"]
+ndarray = ["burn-ndarray"]
+ndarray-blas-netlib = ["burn-ndarray/blas-netlib"]
+ndarray-blas-openblas = ["burn-ndarray/blas-openblas"]
+
+[dependencies]
+criterion = { version = "0.3", html_reports = true }
+burn = { git = "https://github.com/burn-rs/burn/", tag = "v0.5.0", version = "0.5.0" }
+burn-tch = { version = "0.5.0", optional = true, git = "https://github.com/burn-rs/burn/", tag = "v0.5.0" }
+burn-ndarray = { version = "0.5.0", optional = true, git = "https://github.com/burn-rs/burn/", tag = "v0.5.0" }
+
+derive-new = "0.5.9"
+serde = { version = "1.0.151", features = ["derive"] }
+sysinfo = "0.28.0"
+nvml-wrapper = "0.8.0"
+clap = { version = "4.1.6", features = ["derive"] }
+ctrlc = "3.2.5"
+
+[[bench]]
+name = "mlp"
+harness = false
