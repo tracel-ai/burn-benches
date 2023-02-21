@@ -62,9 +62,9 @@ impl Bench for MlpBench {
         let mut mlp = Mlp::new(config);
         mlp.to_device(&device);
 
-        return Box::new(move || {
+        Box::new(move || {
             let _tensor = mlp.forward(tensor.clone());
-        });
+        })
     }
 }
 
@@ -80,10 +80,10 @@ impl Bench for MlpBenchAD {
         let mut mlp = Mlp::new(config);
         mlp.to_device(&device);
 
-        return Box::new(move || {
+        Box::new(move || {
             let tensor = mlp.forward(tensor.clone());
             let _grads = tensor.backward();
-        });
+        })
     }
 }
 

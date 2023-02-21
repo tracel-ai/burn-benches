@@ -66,10 +66,10 @@ impl Bench for TansformerBench {
         let mut transformer = TransformerEncoder::new(&config.encoder);
         transformer.to_device(&device);
 
-        return Box::new(move || {
+        Box::new(move || {
             let input = TransformerEncoderInput::new(tensor.clone());
             let _tensor = transformer.forward(input);
-        });
+        })
     }
 }
 
@@ -89,11 +89,11 @@ impl Bench for TansformerBenchAD {
         let mut transformer = TransformerEncoder::new(&config.encoder);
         transformer.to_device(&device);
 
-        return Box::new(move || {
+        Box::new(move || {
             let input = TransformerEncoderInput::new(tensor.clone());
             let tensor = transformer.forward(input);
             let _grads = tensor.backward();
-        });
+        })
     }
 }
 #[derive(Config)]

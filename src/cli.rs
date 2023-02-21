@@ -132,7 +132,7 @@ fn write_bash_file(runs: &[BenchParam], filename: &str, repo: &str) {
 
     content += format!("| criterion-table >  {MD_FILENAME}").as_str();
 
-    if let Some(_) = Command::new("pandoc").arg("--help").output().ok() {
+    if let Ok(_) = Command::new("pandoc").arg("--help").output() {
         content += format!("\npandoc -f markdown {MD_FILENAME} > {HTML_FILENAME}").as_str();
     }
 
@@ -143,7 +143,7 @@ fn write_bash_file(runs: &[BenchParam], filename: &str, repo: &str) {
 fn prepare(runs: &[BenchParam], repo: &str) {
     std::fs::create_dir_all(OUTPUT_DIR).unwrap();
 
-    write_bash_file(&runs, SH_FILENAME, repo);
+    write_bash_file(runs, SH_FILENAME, repo);
     make_tables();
 
     Command::new("cp")

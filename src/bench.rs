@@ -17,7 +17,7 @@ pub trait Bench {
 }
 
 pub type BenchBoxed<C> = Box<dyn Bench<Config = C>>;
-pub type BenchFunc = Box<dyn FnMut() -> ()>;
+pub type BenchFunc = Box<dyn FnMut()>;
 
 pub fn run_benchmark<C, B>(c: &mut Criterion, name: &str, configs: Vec<C>, bench: B)
 where
@@ -33,7 +33,10 @@ where
         let mut func = bench.prepare(config);
 
         group.bench_with_input(BenchmarkId::new(bench_id(), i + 1), &(), |b, _i| {
-            b.iter(|| black_box(func()))
+            b.iter(|| {
+                func();
+                black_box(())
+            })
         });
     });
 }

@@ -5,7 +5,8 @@ use sysinfo::{CpuExt, System, SystemExt};
 
 pub fn make_tables() {
     let mut file = File::create("tables.toml").unwrap();
-    file.write(format!("[top_comments]\n").as_bytes()).unwrap();
+    file.write("[top_comments]\n".to_string().as_bytes())
+        .unwrap();
 
     write_section(
         &mut file,
@@ -13,7 +14,7 @@ pub fn make_tables() {
         format!("Burn micro benchmarks\n{}", system_infos()).as_str(),
     );
 
-    file.write(format!("[table_comments]\n").as_bytes())
+    file.write("[table_comments]\n".to_string().as_bytes())
         .unwrap();
 
     write_bench_suite::<mlp::MlpBenchSuite>(&mut file);
@@ -55,11 +56,11 @@ fn write_bench_suite<B: BenchSuite>(file: &mut File) {
     file.write(format!("{} = \"\"\"\n", B::name()).as_bytes())
         .unwrap();
     file.write(B::details().as_bytes()).unwrap();
-    file.write(format!("\n\"\"\"\n").as_bytes()).unwrap();
+    file.write("\n\"\"\"\n".to_string().as_bytes()).unwrap();
 }
 
 fn write_section(file: &mut File, name: &str, content: &str) {
     file.write(format!("{name} = \"\"\"\n").as_bytes()).unwrap();
     file.write(content.as_bytes()).unwrap();
-    file.write(format!("\n\"\"\"\n").as_bytes()).unwrap();
+    file.write("\n\"\"\"\n".to_string().as_bytes()).unwrap();
 }

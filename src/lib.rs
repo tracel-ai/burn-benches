@@ -63,7 +63,7 @@ pub fn version_file() -> String {
 }
 
 pub fn version() -> String {
-    let version = std::fs::read_to_string(&version_file()).unwrap();
+    let version = std::fs::read_to_string(version_file()).unwrap();
     let version = version.trim();
     version.to_string()
 }
