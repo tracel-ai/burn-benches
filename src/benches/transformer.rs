@@ -8,6 +8,7 @@ use burn::{
     nn::transformer::{TransformerEncoder, TransformerEncoderConfig, TransformerEncoderInput},
     tensor::Tensor,
 };
+use burn_autodiff::ADBackendDecorator;
 use criterion::Criterion;
 
 pub struct TransformerBenchSuite;
@@ -29,23 +30,29 @@ impl BenchSuite for TransformerBenchSuite {
     }
 
     fn run(c: &mut Criterion) {
-        run_benchmark(c, &Self::name(), configs(), MhaBench::new());
+        let name = Self::name();
+        let name_autodiff = format!("{}-autodiff", Self::name());
+
+        run_benchmark(c, &name, configs(), TansformerBench::new());
+        run_benchmark(c, &name_autodiff, configs(), TansformerBenchAD::new());
     }
 }
 
 fn configs() -> Vec<TransformerConfig> {
     vec![
+        TransformerConfig::new(2, 64, TransformerEncoderConfig::new(32, 128, 2, 4)),
         TransformerConfig::new(4, 128, TransformerEncoderConfig::new(64, 256, 4, 4)),
         TransformerConfig::new(4, 128, TransformerEncoderConfig::new(128, 512, 8, 4)),
         TransformerConfig::new(4, 128, TransformerEncoderConfig::new(256, 1024, 8, 4)),
-        TransformerConfig::new(4, 128, TransformerEncoderConfig::new(512, 2048, 16, 4)),
     ]
 }
 
 #[derive(new)]
-pub struct MhaBench;
+pub struct TansformerBench;
+#[derive(new)]
+pub struct TansformerBenchAD;
 
-impl Bench for MhaBench {
+impl Bench for TansformerBench {
     type Config = TransformerConfig;
 
     fn prepare(&self, config: &Self::Config) -> BenchFunc {
@@ -66,6 +73,29 @@ impl Bench for MhaBench {
     }
 }
 
+impl Bench for TansformerBenchAD {
+    type Config = TransformerConfig;
+
+    fn prepare(&self, config: &Self::Config) -> BenchFunc {
+        type Backend = ADBackendDecorator<BenchBackend>;
+
+        let device = device();
+        let tensor = Tensor::<Backend, 3>::ones([
+            config.batch_size,
+            config.seq_length,
+            config.encoder.d_model,
+        ])
+        .to_device(&device);
+        let mut transformer = TransformerEncoder::new(&config.encoder);
+        transformer.to_device(&device);
+
+        return Box::new(move || {
+            let input = TransformerEncoderInput::new(tensor.clone());
+            let tensor = transformer.forward(input);
+            let _grads = tensor.backward();
+        });
+    }
+}
 #[derive(Config)]
 pub struct TransformerConfig {
     pub batch_size: usize,

@@ -8,6 +8,7 @@ use burn::{
     nn,
     tensor::{backend::Backend, Tensor},
 };
+use burn_autodiff::ADBackendDecorator;
 use criterion::Criterion;
 
 pub struct MlpBenchSuite;
@@ -29,7 +30,11 @@ impl BenchSuite for MlpBenchSuite {
     }
 
     fn run(c: &mut Criterion) {
-        run_benchmark(c, &Self::name(), configs(), MlpBench::new());
+        let name = Self::name();
+        let name_autodiff = format!("{}-autodiff", Self::name());
+
+        run_benchmark(c, &name, configs(), MlpBench::new());
+        run_benchmark(c, &name_autodiff, configs(), MlpBenchAD::new());
     }
 }
 
@@ -59,6 +64,25 @@ impl Bench for MlpBench {
 
         return Box::new(move || {
             let _tensor = mlp.forward(tensor.clone());
+        });
+    }
+}
+
+impl Bench for MlpBenchAD {
+    type Config = MlpConfig;
+
+    fn prepare(&self, config: &Self::Config) -> BenchFunc {
+        type Backend = ADBackendDecorator<BenchBackend>;
+
+        let device = device();
+        let tensor =
+            Tensor::<Backend, 2>::ones([config.batch_size, config.d_model]).to_device(&device);
+        let mut mlp = Mlp::new(config);
+        mlp.to_device(&device);
+
+        return Box::new(move || {
+            let tensor = mlp.forward(tensor.clone());
+            let _grads = tensor.backward();
         });
     }
 }
