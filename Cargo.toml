@@ -15,9 +15,10 @@ ndarray-blas-openblas = ["burn-ndarray/blas-openblas"]
 
 [dependencies]
 criterion = { version = "0.3", html_reports = true }
-burn = { git = "https://github.com/burn-rs/burn/", tag = "v0.5.0", version = "0.5.0" }
-burn-tch = { version = "0.5.0", optional = true, git = "https://github.com/burn-rs/burn/", tag = "v0.5.0" }
-burn-ndarray = { version = "0.5.0", optional = true, git = "https://github.com/burn-rs/burn/", tag = "v0.5.0" }
+burn = "0.5.0"
+burn-tch = { version = "0.5.0", optional = true }
+burn-ndarray = { version = "0.5.0", optional = true }
+burn-autodiff = { version = "0.5.0", optional = true }
 
 derive-new = "0.5.9"
 serde = { version = "1.0.151", features = ["derive"] }
@@ -28,4 +29,8 @@ ctrlc = "3.2.5"
 
 [[bench]]
 name = "mlp"
+harness = false
+
+[[bench]]
+name = "transformer"
 harness = false

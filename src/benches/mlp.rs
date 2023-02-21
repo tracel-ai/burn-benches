@@ -44,6 +44,8 @@ fn configs() -> Vec<MlpConfig> {
 
 #[derive(new)]
 pub struct MlpBench;
+#[derive(new)]
+pub struct MlpBenchAD;
 
 impl Bench for MlpBench {
     type Config = MlpConfig;

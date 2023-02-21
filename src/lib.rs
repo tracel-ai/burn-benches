@@ -3,8 +3,10 @@ extern crate derive_new;
 
 pub mod bench;
 pub mod cli;
-pub mod mlp;
 pub mod tables;
+
+mod benches;
+pub use benches::*;
 
 #[cfg(feature = "tch-cpu")]
 pub type BenchBackend = burn_tch::TchBackend<f32>;

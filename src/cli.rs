@@ -6,6 +6,9 @@ use std::io::Write;
 use std::process::Command;
 
 static SH_FILENAME: &str = "target/tmp/run_burn.sh";
+static OUTPUT_DIR: &str = "target/burn_benches";
+static MD_FILENAME: &str = "target/burn_benches/BENCHMARKS.md";
+static HTML_FILENAME: &str = "target/burn_benches/benchmarks.html";
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -25,8 +28,8 @@ pub struct BenchesArgs {
 #[derive(ValueEnum, Debug, Clone)]
 pub enum Backend {
     Ndarray,
-    NdarrayBlasNetlib,
-    NdarrayBlasOpenblas,
+    NdarrayNetlib,
+    NdarrayOpenblas,
     TchCpu,
     TchGpu,
 }
@@ -72,7 +75,7 @@ impl Benches {
     pub fn run(self) {
         prepare(&self.params, &self.repo);
 
-        let mut handle = Command::new("bash").arg(SH_FILENAME).spawn().unwrap();
+        let mut handle = Command::new("sh").arg(SH_FILENAME).spawn().unwrap();
         handle.wait().unwrap();
     }
 }
@@ -83,8 +86,8 @@ impl Into<Vec<BenchParam>> for BenchesArgs {
         for backend in self.backends {
             let flag = match backend {
                 Backend::Ndarray => "ndarray",
-                Backend::NdarrayBlasNetlib => "ndarray-blas-netlib",
-                Backend::NdarrayBlasOpenblas => "ndarray-blas-openblas",
+                Backend::NdarrayNetlib => "ndarray-blas-netlib",
+                Backend::NdarrayOpenblas => "ndarray-blas-openblas",
                 Backend::TchCpu => "tch-cpu",
                 Backend::TchGpu => "tch-gpu",
             };
@@ -127,10 +130,10 @@ fn write_bash_file(runs: &[BenchParam], filename: &str, repo: &str) {
         content += " ";
     }
 
-    content += "| criterion-table >  BENCHMARKS.md";
+    content += format!("| criterion-table >  {MD_FILENAME}").as_str();
 
     if let Some(_) = Command::new("pandoc").arg("--help").output().ok() {
-        content += "\npandoc -f markdown BENCHMARKS.md > benchmarks.html";
+        content += format!("\npandoc -f markdown {MD_FILENAME} > {HTML_FILENAME}").as_str();
     }
 
     let mut file = File::create(filename).unwrap();
@@ -138,6 +141,8 @@ fn write_bash_file(runs: &[BenchParam], filename: &str, repo: &str) {
 }
 
 fn prepare(runs: &[BenchParam], repo: &str) {
+    std::fs::create_dir_all(OUTPUT_DIR).unwrap();
+
     write_bash_file(&runs, SH_FILENAME, repo);
     make_tables();
 
@@ -172,6 +177,7 @@ fn build_bash(run: &BenchParam, repo: &str) -> String {
     output += format!("cargo add burn --git {repo} --{identifier} {value}\n").as_str();
     output += format!("cargo add burn-tch --git {repo} --{identifier} {value}\n").as_str();
     output += format!("cargo add burn-ndarray --git {repo} --{identifier} {value}\n").as_str();
+    output += format!("cargo add burn-autodiff --git {repo} --{identifier} {value}\n").as_str();
     output += format!(
         "cargo criterion {ops} --message-format=json > {}\n",
         run.bench_filename()

@@ -1,4 +1,4 @@
-use crate::{bench::BenchSuite, mlp};
+use crate::{bench::BenchSuite, mlp, transformer};
 use nvml_wrapper::Nvml;
 use std::{fs::File, io::Write};
 use sysinfo::{CpuExt, System, SystemExt};
@@ -17,11 +17,12 @@ pub fn make_tables() {
         .unwrap();
 
     write_bench_suite::<mlp::MlpBenchSuite>(&mut file);
+    write_bench_suite::<transformer::TransformerBenchSuite>(&mut file);
 }
 
 fn system_infos() -> String {
     let sys = System::new_all();
-    let mut info = String::from("**System**\n");
+    let mut info = String::from("\n## System\n\n");
 
     sys.name()
         .map(|name| info += format!("- Name: {name}\n").as_str());
