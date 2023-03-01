@@ -40,9 +40,7 @@ impl BenchSuite for TransformerBenchSuite {
 
 fn configs() -> Vec<TransformerConfig> {
     vec![
-        TransformerConfig::new(2, 64, TransformerEncoderConfig::new(32, 128, 2, 4)),
         TransformerConfig::new(4, 128, TransformerEncoderConfig::new(64, 256, 4, 4)),
-        TransformerConfig::new(4, 128, TransformerEncoderConfig::new(128, 512, 8, 4)),
         TransformerConfig::new(4, 128, TransformerEncoderConfig::new(256, 1024, 8, 4)),
     ]
 }

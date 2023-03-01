@@ -43,9 +43,11 @@ pub struct BenchParam {
 
 impl BenchParam {
     fn bench_filename(&self) -> String {
+        let value = self.value.replace('/', "-");
+
         format!(
             "target/tmp/{}-{}-{}.json",
-            self.backend_flag, self.identifier, self.value
+            self.backend_flag, self.identifier, value
         )
     }
 }
@@ -173,7 +175,9 @@ fn build_bash(run: &BenchParam, repo: &str) -> String {
     let value = &run.value;
 
     let mut output = String::new();
-    output += format!("echo {} > {}\n", run.value, version_file()).as_str();
+
+    let version = run.value.replace('/', "-");
+    output += format!("echo {} > {}\n", version, version_file()).as_str();
     output += format!("cargo add burn --git {repo} --{identifier} {value}\n").as_str();
     output += format!("cargo add burn-tch --git {repo} --{identifier} {value}\n").as_str();
     output += format!("cargo add burn-ndarray --git {repo} --{identifier} {value}\n").as_str();

@@ -39,12 +39,7 @@ impl BenchSuite for MlpBenchSuite {
 }
 
 fn configs() -> Vec<MlpConfig> {
-    vec![
-        MlpConfig::new(1, 4, 128),
-        MlpConfig::new(16, 4, 256),
-        MlpConfig::new(32, 4, 512),
-        MlpConfig::new(64, 4, 1024),
-    ]
+    vec![MlpConfig::new(64, 4, 1024), MlpConfig::new(128, 8, 2048)]
 }
 
 #[derive(new)]
