@@ -54,8 +54,7 @@ impl Bench for MlpBench {
         let device = device();
         let tensor =
             Tensor::<BenchBackend, 2>::ones([config.batch_size, config.d_model]).to_device(&device);
-        let mut mlp = Mlp::new(config);
-        mlp.to_device(&device);
+        let mlp = Mlp::new(config).to_device(&device);
 
         Box::new(move || {
             let _tensor = mlp.forward(tensor.clone());
@@ -72,8 +71,7 @@ impl Bench for MlpBenchAD {
         let device = device();
         let tensor =
             Tensor::<Backend, 2>::ones([config.batch_size, config.d_model]).to_device(&device);
-        let mut mlp = Mlp::new(config);
-        mlp.to_device(&device);
+        let mlp = Mlp::new(config).to_device(&device);
 
         Box::new(move || {
             let tensor = mlp.forward(tensor.clone());
@@ -105,7 +103,7 @@ impl<B: Backend> Mlp<B> {
         }
 
         Self {
-            linears: Param::new(linears),
+            linears: Param::from(linears),
             activation: nn::ReLU::new(),
         }
     }
