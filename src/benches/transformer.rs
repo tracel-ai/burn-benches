@@ -61,8 +61,7 @@ impl Bench for TansformerBench {
             config.encoder.d_model,
         ])
         .to_device(&device);
-        let mut transformer = TransformerEncoder::new(&config.encoder);
-        transformer.to_device(&device);
+        let transformer = TransformerEncoder::new(&config.encoder).to_device(&device);
 
         Box::new(move || {
             let input = TransformerEncoderInput::new(tensor.clone());
@@ -84,8 +83,7 @@ impl Bench for TansformerBenchAD {
             config.encoder.d_model,
         ])
         .to_device(&device);
-        let mut transformer = TransformerEncoder::new(&config.encoder);
-        transformer.to_device(&device);
+        let transformer = TransformerEncoder::new(&config.encoder).to_device(&device);
 
         Box::new(move || {
             let input = TransformerEncoderInput::new(tensor.clone());
