@@ -1,4 +1,4 @@
-use crate::{bench::BenchSuite, mlp, transformer};
+use crate::{bench::BenchSuite, conv2d, mlp, transformer};
 use nvml_wrapper::Nvml;
 use std::{fs::File, io::Write};
 use sysinfo::{CpuExt, System, SystemExt};
@@ -19,6 +19,7 @@ pub fn make_tables() {
 
     write_bench_suite::<mlp::MlpBenchSuite>(&mut file);
     write_bench_suite::<transformer::TransformerBenchSuite>(&mut file);
+    write_bench_suite::<conv2d::Conv2dBenchSuite>(&mut file);
 }
 
 fn system_infos() -> String {
