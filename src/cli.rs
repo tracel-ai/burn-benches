@@ -30,6 +30,7 @@ pub enum Backend {
     Ndarray,
     NdarrayNetlib,
     NdarrayOpenblas,
+    NdarrayNoStd,
     TchCpu,
     TchGpu,
 }
@@ -90,6 +91,7 @@ impl Into<Vec<BenchParam>> for BenchesArgs {
                 Backend::Ndarray => "ndarray",
                 Backend::NdarrayNetlib => "ndarray-blas-netlib",
                 Backend::NdarrayOpenblas => "ndarray-blas-openblas",
+                Backend::NdarrayNoStd => "ndarray-no-std",
                 Backend::TchCpu => "tch-cpu",
                 Backend::TchGpu => "tch-gpu",
             };

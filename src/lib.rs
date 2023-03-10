@@ -16,7 +16,8 @@ pub type BenchBackend = burn_tch::TchBackend<f32>;
 #[cfg(any(
     feature = "ndarray",
     feature = "ndarray-blas-netlib",
-    feature = "ndarray-blas-openblas"
+    feature = "ndarray-blas-openblas",
+    feature = "ndarray-no-std"
 ))]
 pub type BenchBackend = burn_ndarray::NdArrayBackend<f32>;
 
@@ -41,6 +42,9 @@ pub fn flags() -> String {
 
     #[cfg(feature = "ndarray-blas-openblas")]
     return "ndarray-openblas".into();
+
+    #[cfg(feature = "ndarray-no-std")]
+    return "ndarray-no-std".into();
 }
 
 pub fn device() -> BenchDevice {
@@ -53,7 +57,8 @@ pub fn device() -> BenchDevice {
     #[cfg(any(
         feature = "ndarray",
         feature = "ndarray-blas-netlib",
-        feature = "ndarray-blas-openblas"
+        feature = "ndarray-blas-openblas",
+        feature = "ndarray-no-std"
     ))]
     return burn_ndarray::NdArrayDevice::Cpu;
 }
