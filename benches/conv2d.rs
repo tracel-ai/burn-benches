@@ -1,5 +1,5 @@
-use burn_benches::{bench::BenchSuite, transformer};
+use burn_benches::{bench::BenchSuite, conv2d};
 use criterion::{criterion_group, criterion_main};
 
-criterion_group!(benches, transformer::TransformerBenchSuite::run);
+criterion_group!(benches, conv2d::Conv2dBenchSuite::run);
 criterion_main!(benches);

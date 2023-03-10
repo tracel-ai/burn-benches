@@ -5,17 +5,17 @@ use crate::{
 use burn::{
     config::Config,
     module::{Module, Param},
-    nn::conv::{Conv2d, Conv2dConfig},
+    nn::conv::{Conv2d, Conv2dConfig, Conv2dPaddingConfig},
     tensor::{backend::Backend, Distribution, Tensor},
 };
 use burn_autodiff::ADBackendDecorator;
 use criterion::Criterion;
 
-pub struct TransformerBenchSuite;
+pub struct Conv2dBenchSuite;
 
-impl BenchSuite for TransformerBenchSuite {
+impl BenchSuite for Conv2dBenchSuite {
     fn name() -> String {
-        "transformer".into()
+        "Conv2d".into()
     }
 
     fn details() -> String {
@@ -62,10 +62,35 @@ impl<B: Backend> Conv2dBlock<B> {
             convs: Param::from(convs),
         }
     }
+
+    pub fn forward(&self, tensor: Tensor<B, 4>) -> Tensor<B, 4> {
+        let mut x = tensor;
+
+        for conv in self.convs.iter() {
+            x = conv.forward(x);
+        }
+
+        x
+    }
 }
 
-fn configs() -> Vec<Conv2dConfig> {
-    vec![]
+fn configs() -> Vec<Conv2dBenchConfig> {
+    vec![
+        Conv2dBenchConfig::new(
+            4,
+            32,
+            32,
+            2,
+            Conv2dConfig::new([1, 1], [3, 3]).with_padding(Conv2dPaddingConfig::Same),
+        ),
+        Conv2dBenchConfig::new(
+            4,
+            64,
+            64,
+            2,
+            Conv2dConfig::new([1, 1], [3, 3]).with_padding(Conv2dPaddingConfig::Same),
+        ),
+    ]
 }
 
 #[derive(new)]
@@ -91,37 +116,33 @@ impl Bench for Conv2dBench {
         let module = Conv2dBlock::new(&config).to_device(&device);
 
         Box::new(move || {
-            let _tensor = module.forward(input.clone());
+            let _tensor = module.forward(tensor.clone());
         })
     }
 }
 
 impl Bench for Conv2dBenchAD {
-    type Config = TransformerConfig;
+    type Config = Conv2dBenchConfig;
 
     fn prepare(&self, config: &Self::Config) -> BenchFunc {
         type Backend = ADBackendDecorator<BenchBackend>;
 
         let device = device();
-        let tensor = Tensor::<Backend, 3>::ones([
-            config.batch_size,
-            config.seq_length,
-            config.encoder.d_model,
-        ])
+        let tensor = Tensor::<Backend, 4>::random(
+            [
+                config.batch_size,
+                config.conv2d.channels[0],
+                config.height,
+                config.width,
+            ],
+            Distribution::Standard,
+        )
         .to_device(&device);
-        let mut transformer = TransformerEncoder::new(&config.encoder);
-        transformer.to_device(&device);
+        let module = Conv2dBlock::new(&config).to_device(&device);
 
         Box::new(move || {
-            let input = TransformerEncoderInput::new(tensor.clone());
-            let tensor = transformer.forward(input);
+            let tensor = module.forward(tensor.clone());
             let _grads = tensor.backward();
         })
     }
-}
-#[derive(Config)]
-pub struct TransformerConfig {
-    pub batch_size: usize,
-    pub seq_length: usize,
-    pub encoder: TransformerEncoderConfig,
 }
