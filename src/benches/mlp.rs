@@ -4,7 +4,7 @@ use crate::{
 };
 use burn::{
     config::Config,
-    module::{Module, Param},
+    module::Module,
     nn,
     tensor::{backend::Backend, Tensor},
 };
@@ -89,22 +89,19 @@ pub struct MlpConfig {
 
 #[derive(Module, Debug)]
 pub struct Mlp<B: Backend> {
-    linears: Param<Vec<nn::Linear<B>>>,
-    activation: nn::ReLU,
+    linears: Vec<nn::Linear<B>>,
+    activation: nn::GELU,
 }
 
 impl<B: Backend> Mlp<B> {
     pub fn new(config: &MlpConfig) -> Self {
-        let mut linears = Vec::with_capacity(config.num_layers);
-
-        for _ in 0..config.num_layers {
-            let linear = nn::Linear::new(&nn::LinearConfig::new(config.d_model, config.d_model));
-            linears.push(linear);
-        }
+        let linears = (0..config.num_layers)
+            .map(|_| nn::LinearConfig::new(config.d_model, config.d_model).init())
+            .collect();
 
         Self {
-            linears: Param::from(linears),
-            activation: nn::ReLU::new(),
+            linears,
+            activation: nn::GELU::new(),
         }
     }
 

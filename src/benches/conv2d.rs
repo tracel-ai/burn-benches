@@ -4,7 +4,7 @@ use crate::{
 };
 use burn::{
     config::Config,
-    module::{Module, Param},
+    module::Module,
     nn::conv::{Conv2d, Conv2dConfig, Conv2dPaddingConfig},
     tensor::{backend::Backend, Distribution, Tensor},
 };
@@ -49,18 +49,16 @@ pub struct Conv2dBenchConfig {
 
 #[derive(Module, Debug)]
 pub struct Conv2dBlock<B: Backend> {
-    convs: Param<Vec<Conv2d<B>>>,
+    convs: Vec<Conv2d<B>>,
 }
 
 impl<B: Backend> Conv2dBlock<B> {
     pub fn new(config: &Conv2dBenchConfig) -> Self {
         let convs = (0..config.num_layers)
-            .map(|_| Conv2d::new(&config.conv2d))
-            .collect::<Vec<_>>();
+            .map(|_| config.conv2d.init())
+            .collect();
 
-        Self {
-            convs: Param::from(convs),
-        }
+        Self { convs }
     }
 
     pub fn forward(&self, tensor: Tensor<B, 4>) -> Tensor<B, 4> {

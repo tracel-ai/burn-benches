@@ -21,6 +21,8 @@ pub struct BenchesArgs {
     commits: Vec<String>,
     #[arg(short, long, num_args(0..))]
     branches: Vec<String>,
+    #[arg(short('N'), long)]
+    bench: Bench,
     #[arg(short, long, default_value_t = String::from("https://github.com/burn-rs/burn/"))]
     pub repository: String,
 }
@@ -35,11 +37,20 @@ pub enum Backend {
     TchGpu,
 }
 
+#[derive(ValueEnum, Debug, Clone)]
+pub enum Bench {
+    Transformer,
+    MLP,
+    Conv2d,
+    All,
+}
+
 #[derive(Clone)]
 pub struct BenchParam {
     identifier: String,
     value: String,
     backend_flag: String,
+    bench: String,
 }
 
 impl BenchParam {
@@ -85,6 +96,19 @@ impl Benches {
 
 impl Into<Vec<BenchParam>> for BenchesArgs {
     fn into(self) -> Vec<BenchParam> {
+        let mut bench = String::new();
+
+        match self.bench {
+            Bench::Transformer => bench += "transformer",
+            Bench::MLP => bench += "mlp",
+            Bench::Conv2d => bench += "conv2d",
+            Bench::All => {}
+        }
+
+        if !bench.is_empty() {
+            bench = format!("--bench {bench}");
+        }
+
         let mut runs = Vec::new();
         for backend in self.backends {
             let flag = match backend {
@@ -95,10 +119,12 @@ impl Into<Vec<BenchParam>> for BenchesArgs {
                 Backend::TchCpu => "tch-cpu",
                 Backend::TchGpu => "tch-gpu",
             };
+
             for tag in self.tags.iter() {
                 runs.push(BenchParam {
                     identifier: "tag".into(),
                     value: tag.into(),
+                    bench: bench.clone(),
                     backend_flag: flag.into(),
                 });
             }
@@ -106,6 +132,7 @@ impl Into<Vec<BenchParam>> for BenchesArgs {
                 runs.push(BenchParam {
                     identifier: "rev".into(),
                     value: commit.into(),
+                    bench: bench.clone(),
                     backend_flag: flag.into(),
                 });
             }
@@ -113,6 +140,7 @@ impl Into<Vec<BenchParam>> for BenchesArgs {
                 runs.push(BenchParam {
                     identifier: "branch".into(),
                     value: branch.into(),
+                    bench: bench.clone(),
                     backend_flag: flag.into(),
                 });
             }
@@ -175,9 +203,9 @@ fn build_bash(run: &BenchParam, repo: &str) -> String {
 
     let identifier = &run.identifier;
     let value = &run.value;
+    let bench = &run.bench;
 
     let mut output = String::new();
-
     let version = run.value.replace('/', "-");
     output += format!("echo {} > {}\n", version, version_file()).as_str();
     output += format!("cargo add burn --git {repo} --{identifier} {value}\n").as_str();
@@ -185,7 +213,7 @@ fn build_bash(run: &BenchParam, repo: &str) -> String {
     output += format!("cargo add burn-ndarray --git {repo} --{identifier} {value}\n").as_str();
     output += format!("cargo add burn-autodiff --git {repo} --{identifier} {value}\n").as_str();
     output += format!(
-        "cargo criterion {ops} --message-format=json > {}\n",
+        "cargo criterion {ops} {bench} --message-format=json > {}\n",
         run.bench_filename()
     )
     .as_str();

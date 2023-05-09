@@ -17,7 +17,7 @@ ndarray-blas-openblas = ["burn-ndarray/std", "burn-ndarray/blas-openblas"]
 ndarray-no-std = ["burn-ndarray"]
 
 [dependencies]
-criterion = { version = "0.3", html_reports = true }
+criterion = { version = "0.4", html_reports = true }
 burn = { git = "https://github.com/burn-rs/burn/", branch = "main" }
 burn-autodiff = { git = "https://github.com/burn-rs/burn/", branch = "main" }
 

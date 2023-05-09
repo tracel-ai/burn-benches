@@ -5,7 +5,7 @@ use crate::{
 use burn::{
     config::Config,
     module::Module,
-    nn::transformer::{TransformerEncoder, TransformerEncoderConfig, TransformerEncoderInput},
+    nn::transformer::{TransformerEncoderConfig, TransformerEncoderInput},
     tensor::Tensor,
 };
 use burn_autodiff::ADBackendDecorator;
@@ -61,7 +61,7 @@ impl Bench for TansformerBench {
             config.encoder.d_model,
         ])
         .to_device(&device);
-        let transformer = TransformerEncoder::new(&config.encoder).to_device(&device);
+        let transformer = config.encoder.init().to_device(&device);
 
         Box::new(move || {
             let input = TransformerEncoderInput::new(tensor.clone());
@@ -83,7 +83,7 @@ impl Bench for TansformerBenchAD {
             config.encoder.d_model,
         ])
         .to_device(&device);
-        let transformer = TransformerEncoder::new(&config.encoder).to_device(&device);
+        let transformer = config.encoder.init().to_device(&device);
 
         Box::new(move || {
             let input = TransformerEncoderInput::new(tensor.clone());
