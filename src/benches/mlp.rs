@@ -39,7 +39,11 @@ impl BenchSuite for MlpBenchSuite {
 }
 
 fn configs() -> Vec<MlpConfig> {
-    vec![MlpConfig::new(64, 4, 1024), MlpConfig::new(128, 8, 2048)]
+    vec![
+        MlpConfig::new(1, 100, 32),
+        MlpConfig::new(64, 4, 1024),
+        MlpConfig::new(128, 8, 2048),
+    ]
 }
 
 #[derive(new)]
@@ -57,7 +61,8 @@ impl Bench for MlpBench {
         let mlp = Mlp::new(config).to_device(&device);
 
         Box::new(move || {
-            let _tensor = mlp.forward(tensor.clone());
+            let tensor = mlp.forward(tensor.clone());
+            let _data = tensor.sum().into_data();
         })
     }
 }
@@ -75,7 +80,9 @@ impl Bench for MlpBenchAD {
 
         Box::new(move || {
             let tensor = mlp.forward(tensor.clone());
-            let _grads = tensor.backward();
+            let loss = tensor.sum();
+            let _grads = loss.clone().backward();
+            let _data = loss.into_data();
         })
     }
 }
