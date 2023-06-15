@@ -59,8 +59,8 @@ impl BenchSettings {
         let value = self.value.replace('/', "-");
 
         format!(
-            "target/tmp/{}-{}-{}.json",
-            self.backend_flag, self.identifier, value
+            "{}/{}-{}-{}.json",
+            OUTPUT_DIR, self.backend_flag, self.identifier, value
         )
     }
 }
