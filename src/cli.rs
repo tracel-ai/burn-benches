@@ -21,6 +21,8 @@ pub struct BenchesArgs {
     commits: Vec<String>,
     #[arg(short, long, num_args(0..))]
     branches: Vec<String>,
+    #[arg(short, long, num_args(0..))]
+    paths: Vec<String>,
     #[arg(short('N'), long)]
     bench: Bench,
     #[arg(short, long, default_value_t = String::from("https://github.com/burn-rs/burn/"))]
@@ -35,6 +37,7 @@ pub enum Backend {
     NdarrayNoStd,
     TchCpu,
     TchGpu,
+    Wgpu,
 }
 
 #[derive(ValueEnum, Debug, Clone)]
@@ -46,22 +49,36 @@ pub enum Bench {
 }
 
 #[derive(Clone)]
-pub struct BenchParam {
-    identifier: String,
-    value: String,
-    backend_flag: String,
-    bench: String,
+pub enum BenchParam {
+    Path(BenchSettings),
+    Git(BenchSettings),
 }
 
-impl BenchParam {
+impl BenchSettings {
     fn bench_filename(&self) -> String {
         let value = self.value.replace('/', "-");
 
         format!(
-            "target/tmp/{}-{}-{}.json",
-            self.backend_flag, self.identifier, value
+            "{}/{}-{}-{}.json",
+            OUTPUT_DIR, self.backend_flag, self.identifier, value
         )
     }
+}
+impl BenchParam {
+    pub fn settings(&self) -> &BenchSettings {
+        match self {
+            BenchParam::Path(val) => val,
+            BenchParam::Git(val) => val,
+        }
+    }
+}
+
+#[derive(Clone)]
+pub struct BenchSettings {
+    identifier: String,
+    value: String,
+    backend_flag: String,
+    bench: String,
 }
 
 pub struct Benches {
@@ -118,31 +135,40 @@ impl Into<Vec<BenchParam>> for BenchesArgs {
                 Backend::NdarrayNoStd => "ndarray-no-std",
                 Backend::TchCpu => "tch-cpu",
                 Backend::TchGpu => "tch-gpu",
+                Backend::Wgpu => "wgpu",
             };
 
             for tag in self.tags.iter() {
-                runs.push(BenchParam {
+                runs.push(BenchParam::Git(BenchSettings {
                     identifier: "tag".into(),
                     value: tag.into(),
                     bench: bench.clone(),
                     backend_flag: flag.into(),
-                });
+                }));
             }
             for commit in self.commits.iter() {
-                runs.push(BenchParam {
+                runs.push(BenchParam::Git(BenchSettings {
                     identifier: "rev".into(),
                     value: commit.into(),
                     bench: bench.clone(),
                     backend_flag: flag.into(),
-                });
+                }));
             }
             for branch in self.branches.iter() {
-                runs.push(BenchParam {
+                runs.push(BenchParam::Git(BenchSettings {
                     identifier: "branch".into(),
                     value: branch.into(),
                     bench: bench.clone(),
                     backend_flag: flag.into(),
-                });
+                }));
+            }
+            for path in self.paths.iter() {
+                runs.push(BenchParam::Path(BenchSettings {
+                    identifier: "path".into(),
+                    value: path.into(),
+                    bench: bench.clone(),
+                    backend_flag: flag.into(),
+                }));
             }
         }
 
@@ -154,11 +180,15 @@ fn write_bash_file(runs: &[BenchParam], filename: &str, repo: &str) {
     let mut content = String::new();
 
     for run in runs.iter() {
-        content += build_bash(run, repo).as_str();
+        content += match run {
+            BenchParam::Path(path) => build_bash_path(path),
+            BenchParam::Git(git) => build_bash_git(git, repo),
+        }
+        .as_str();
     }
     content += "cat ";
     for run in runs.iter() {
-        content += run.bench_filename().as_str();
+        content += run.settings().bench_filename().as_str();
         content += " ";
     }
 
@@ -191,14 +221,14 @@ fn cleanup(params: &[BenchParam]) {
         .unwrap();
 
     for run in params.iter() {
-        std::fs::remove_file(run.bench_filename()).ok();
+        std::fs::remove_file(run.settings().bench_filename()).ok();
     }
 
     std::fs::remove_file(SH_FILENAME).ok();
     std::fs::remove_file("tables.toml").ok();
 }
 
-fn build_bash(run: &BenchParam, repo: &str) -> String {
+fn build_bash_git(run: &BenchSettings, repo: &str) -> String {
     let ops = format!("--no-default-features --features {}", run.backend_flag);
 
     let identifier = &run.identifier;
@@ -209,6 +239,7 @@ fn build_bash(run: &BenchParam, repo: &str) -> String {
     let version = run.value.replace('/', "-");
     output += format!("echo {} > {}\n", version, version_file()).as_str();
     output += format!("cargo add burn --git {repo} --{identifier} {value}\n").as_str();
+    output += format!("cargo add burn-wgpu --git {repo} --{identifier} {value}\n").as_str();
     output += format!("cargo add burn-tch --git {repo} --{identifier} {value}\n").as_str();
     output += format!("cargo add burn-ndarray --git {repo} --{identifier} {value}\n").as_str();
     output += format!("cargo add burn-autodiff --git {repo} --{identifier} {value}\n").as_str();
@@ -217,5 +248,29 @@ fn build_bash(run: &BenchParam, repo: &str) -> String {
         run.bench_filename()
     )
     .as_str();
+    println!("Build bash git {}", output);
+    output
+}
+
+fn build_bash_path(run: &BenchSettings) -> String {
+    let ops = format!("--no-default-features --features {}", run.backend_flag);
+
+    let value = &run.value;
+    let bench = &run.bench;
+
+    let mut output = String::new();
+    let version = run.value.replace('/', "-");
+    output += format!("echo {} > {}\n", version, version_file()).as_str();
+    output += format!("cargo add burn --path {value}/burn \n").as_str();
+    output += format!("cargo add burn-wgpu --path {value}/burn-wgpu\n").as_str();
+    output += format!("cargo add burn-tch --path {value}/burn-tch\n").as_str();
+    output += format!("cargo add burn-ndarray --path {value}/burn-ndarray\n").as_str();
+    output += format!("cargo add burn-autodiff --path {value}/burn-autodiff\n").as_str();
+    output += format!(
+        "cargo criterion {ops} {bench} --message-format=json > {}\n",
+        run.bench_filename()
+    )
+    .as_str();
+    println!("Build bash path {}", output);
     output
 }

@@ -10,6 +10,7 @@ default = ["ndarray-no-std"]
 
 tch-cpu = ["burn-tch"]
 tch-gpu = ["burn-tch"]
+wgpu = ["burn-wgpu"]
 
 ndarray = ["burn-ndarray/std"]
 ndarray-blas-netlib = ["burn-ndarray/std", "burn-ndarray/blas-netlib"]
@@ -23,6 +24,7 @@ burn-autodiff = { git = "https://github.com/burn-rs/burn/", branch = "main" }
 
 # Backends
 burn-tch = { git = "https://github.com/burn-rs/burn/", branch = "main", optional = true }
+burn-wgpu = { git = "https://github.com/burn-rs/burn/", branch = "main", optional = true }
 burn-ndarray = { git = "https://github.com/burn-rs/burn/", branch = "main", optional = true, default-features = false }
 
 derive-new = "0.5.9"

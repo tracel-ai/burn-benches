@@ -111,7 +111,7 @@ impl Bench for Conv2dBench {
             Distribution::Standard,
         )
         .to_device(&device);
-        let module = Conv2dBlock::new(&config).to_device(&device);
+        let module = Conv2dBlock::new(config).to_device(&device);
 
         Box::new(move || {
             let _tensor = module.forward(tensor.clone());
@@ -136,7 +136,7 @@ impl Bench for Conv2dBenchAD {
             Distribution::Standard,
         )
         .to_device(&device);
-        let module = Conv2dBlock::new(&config).to_device(&device);
+        let module = Conv2dBlock::new(config).to_device(&device);
 
         Box::new(move || {
             let tensor = module.forward(tensor.clone());

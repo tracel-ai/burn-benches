@@ -8,6 +8,8 @@ pub mod tables;
 mod benches;
 pub use benches::*;
 
+#[cfg(feature = "wgpu")]
+pub type BenchBackend = burn_wgpu::WGPUBackend<burn_wgpu::Vulkan, f32, i64>;
 #[cfg(feature = "tch-cpu")]
 pub type BenchBackend = burn_tch::TchBackend<f32>;
 #[cfg(feature = "tch-gpu")]
@@ -43,6 +45,9 @@ pub fn flags() -> String {
     #[cfg(feature = "ndarray-blas-openblas")]
     return "ndarray-openblas".into();
 
+    #[cfg(feature = "wgpu")]
+    return "wgpu".into();
+
     #[cfg(feature = "ndarray-no-std")]
     return "ndarray-no-std".into();
 }
@@ -53,6 +58,9 @@ pub fn device() -> BenchDevice {
 
     #[cfg(feature = "tch-cpu")]
     return burn_tch::TchDevice::Cpu;
+
+    #[cfg(feature = "wgpu")]
+    return burn_wgpu::WgpuDevice::DiscreteGpu(0);
 
     #[cfg(any(
         feature = "ndarray",
