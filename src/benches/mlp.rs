@@ -2,13 +2,13 @@ use crate::{
     bench::{run_benchmark, Bench, BenchFunc, BenchSuite},
     device, BenchBackend,
 };
+use burn::backend::Autodiff;
 use burn::{
     config::Config,
     module::Module,
     nn,
     tensor::{backend::Backend, Tensor},
 };
-use burn_autodiff::ADBackendDecorator;
 use criterion::Criterion;
 
 pub struct MlpBenchSuite;
@@ -41,7 +41,7 @@ impl BenchSuite for MlpBenchSuite {
 fn configs() -> Vec<MlpConfig> {
     vec![
         MlpConfig::new(1, 100, 32),
-        MlpConfig::new(64, 4, 1024),
+        MlpConfig::new(32, 4, 1024),
         MlpConfig::new(128, 8, 2048),
     ]
 }
@@ -62,7 +62,7 @@ impl Bench for MlpBench {
 
         Box::new(move || {
             let tensor = mlp.forward(tensor.clone());
-            let _data = tensor.sum().into_data();
+            <BenchBackend as Backend>::sync(&device);
         })
     }
 }
@@ -71,18 +71,18 @@ impl Bench for MlpBenchAD {
     type Config = MlpConfig;
 
     fn prepare(&self, config: &Self::Config) -> BenchFunc {
-        type Backend = ADBackendDecorator<BenchBackend>;
+        type ADBackend = Autodiff<BenchBackend>;
 
         let device = device();
         let tensor =
-            Tensor::<Backend, 2>::ones([config.batch_size, config.d_model]).to_device(&device);
+            Tensor::<ADBackend, 2>::ones([config.batch_size, config.d_model]).to_device(&device);
         let mlp = Mlp::new(config).to_device(&device);
 
         Box::new(move || {
             let tensor = mlp.forward(tensor.clone());
             let loss = tensor.sum();
-            let _grads = loss.clone().backward();
-            let _data = loss.into_data();
+            let _grads = loss.backward();
+            <BenchBackend as Backend>::sync(&device);
         })
     }
 }

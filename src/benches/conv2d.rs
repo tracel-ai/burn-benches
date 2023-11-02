@@ -2,13 +2,14 @@ use crate::{
     bench::{run_benchmark, Bench, BenchFunc, BenchSuite},
     device, BenchBackend,
 };
+use burn::backend::Autodiff;
 use burn::{
     config::Config,
     module::Module,
-    nn::conv::{Conv2d, Conv2dConfig, Conv2dPaddingConfig},
+    nn::conv::{Conv2d, Conv2dConfig},
+    nn::PaddingConfig2d,
     tensor::{backend::Backend, Distribution, Tensor},
 };
-use burn_autodiff::ADBackendDecorator;
 use criterion::Criterion;
 
 pub struct Conv2dBenchSuite;
@@ -79,14 +80,14 @@ fn configs() -> Vec<Conv2dBenchConfig> {
             32,
             32,
             2,
-            Conv2dConfig::new([1, 1], [3, 3]).with_padding(Conv2dPaddingConfig::Same),
+            Conv2dConfig::new([1, 1], [3, 3]).with_padding(PaddingConfig2d::Same),
         ),
         Conv2dBenchConfig::new(
             4,
             64,
             64,
             2,
-            Conv2dConfig::new([1, 1], [3, 3]).with_padding(Conv2dPaddingConfig::Same),
+            Conv2dConfig::new([1, 1], [3, 3]).with_padding(PaddingConfig2d::Same),
         ),
     ]
 }
@@ -108,13 +109,19 @@ impl Bench for Conv2dBench {
                 config.height,
                 config.width,
             ],
-            Distribution::Standard,
+            Distribution::Uniform(0.0, 1.0),
         )
         .to_device(&device);
         let module = Conv2dBlock::new(config).to_device(&device);
 
         Box::new(move || {
-            let _tensor = module.forward(tensor.clone());
+            let mut output = None;
+
+            for _ in 0..10 {
+                output = Some(module.forward(tensor.clone()));
+            }
+
+            <BenchBackend as Backend>::sync(&device);
         })
     }
 }
@@ -123,24 +130,27 @@ impl Bench for Conv2dBenchAD {
     type Config = Conv2dBenchConfig;
 
     fn prepare(&self, config: &Self::Config) -> BenchFunc {
-        type Backend = ADBackendDecorator<BenchBackend>;
+        type ADBackend = Autodiff<BenchBackend>;
 
         let device = device();
-        let tensor = Tensor::<Backend, 4>::random(
+        let tensor = Tensor::<ADBackend, 4>::random(
             [
                 config.batch_size,
                 config.conv2d.channels[0],
                 config.height,
                 config.width,
             ],
-            Distribution::Standard,
+            Distribution::Uniform(0.0, 1.0),
         )
         .to_device(&device);
         let module = Conv2dBlock::new(config).to_device(&device);
 
         Box::new(move || {
-            let tensor = module.forward(tensor.clone());
-            let _grads = tensor.backward();
+            for _ in 0..10 {
+                let tensor = module.forward(tensor.clone());
+                let _grads = tensor.backward();
+                <BenchBackend as Backend>::sync(&device);
+            }
         })
     }
 }

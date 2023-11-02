@@ -9,11 +9,11 @@ mod benches;
 pub use benches::*;
 
 #[cfg(feature = "wgpu")]
-pub type BenchBackend = burn_wgpu::WGPUBackend<burn_wgpu::Vulkan, f32, i64>;
+pub type BenchBackend = burn_wgpu::Wgpu<burn_wgpu::Vulkan, f32, i32>;
 #[cfg(feature = "tch-cpu")]
-pub type BenchBackend = burn_tch::TchBackend<f32>;
+pub type BenchBackend = burn_tch::LibTorch<f32>;
 #[cfg(feature = "tch-gpu")]
-pub type BenchBackend = burn_tch::TchBackend<f32>;
+pub type BenchBackend = burn_tch::LibTorch<f32>;
 
 #[cfg(any(
     feature = "ndarray",
@@ -21,7 +21,7 @@ pub type BenchBackend = burn_tch::TchBackend<f32>;
     feature = "ndarray-blas-openblas",
     feature = "ndarray-no-std"
 ))]
-pub type BenchBackend = burn_ndarray::NdArrayBackend<f32>;
+pub type BenchBackend = burn_ndarray::NdArray<f32>;
 
 pub type BenchDevice = <BenchBackend as burn::tensor::backend::Backend>::Device;
 
@@ -54,10 +54,10 @@ pub fn flags() -> String {
 
 pub fn device() -> BenchDevice {
     #[cfg(feature = "tch-gpu")]
-    return burn_tch::TchDevice::Cuda(0);
+    return burn_tch::LibTorchDevice::Cuda(0);
 
     #[cfg(feature = "tch-cpu")]
-    return burn_tch::TchDevice::Cpu;
+    return burn_tch::LibTorchDevice::Cpu;
 
     #[cfg(feature = "wgpu")]
     return burn_wgpu::WgpuDevice::DiscreteGpu(0);

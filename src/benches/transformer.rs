@@ -2,13 +2,13 @@ use crate::{
     bench::{run_benchmark, Bench, BenchFunc, BenchSuite},
     device, BenchBackend,
 };
+use burn::backend::Autodiff;
 use burn::{
     config::Config,
     module::Module,
     nn::transformer::{TransformerEncoderConfig, TransformerEncoderInput},
-    tensor::Tensor,
+    tensor::{backend::Backend, Tensor},
 };
-use burn_autodiff::ADBackendDecorator;
 use criterion::Criterion;
 
 pub struct TransformerBenchSuite;
@@ -40,8 +40,21 @@ impl BenchSuite for TransformerBenchSuite {
 
 fn configs() -> Vec<TransformerConfig> {
     vec![
-        TransformerConfig::new(4, 128, TransformerEncoderConfig::new(64, 256, 4, 4)),
-        TransformerConfig::new(4, 128, TransformerEncoderConfig::new(256, 1024, 8, 4)),
+        TransformerConfig::new(
+            4,
+            128,
+            TransformerEncoderConfig::new(64, 128, 4, 4).with_dropout(0.0),
+        ),
+        TransformerConfig::new(
+            4,
+            128,
+            TransformerEncoderConfig::new(64, 256, 4, 4).with_dropout(0.0),
+        ),
+        TransformerConfig::new(
+            4,
+            128,
+            TransformerEncoderConfig::new(256, 1024, 8, 4).with_dropout(0.0),
+        ),
     ]
 }
 
@@ -65,7 +78,8 @@ impl Bench for TansformerBench {
 
         Box::new(move || {
             let input = TransformerEncoderInput::new(tensor.clone());
-            let _tensor = transformer.forward(input);
+            let tensor = transformer.forward(input);
+            <BenchBackend as Backend>::sync(&device);
         })
     }
 }
@@ -74,10 +88,10 @@ impl Bench for TansformerBenchAD {
     type Config = TransformerConfig;
 
     fn prepare(&self, config: &Self::Config) -> BenchFunc {
-        type Backend = ADBackendDecorator<BenchBackend>;
+        type ADBackend = Autodiff<BenchBackend>;
 
         let device = device();
-        let tensor = Tensor::<Backend, 3>::ones([
+        let tensor = Tensor::<ADBackend, 3>::ones([
             config.batch_size,
             config.seq_length,
             config.encoder.d_model,
@@ -89,6 +103,7 @@ impl Bench for TansformerBenchAD {
             let input = TransformerEncoderInput::new(tensor.clone());
             let tensor = transformer.forward(input);
             let _grads = tensor.backward();
+            <BenchBackend as Backend>::sync(&device);
         })
     }
 }
